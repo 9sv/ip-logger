@@ -68,4 +68,4 @@ def track_access(code):
     return render_template("track.html", access_logs=[prepare_access_log(dict(row)) for row in rows])
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", port=443)
