@@ -42,10 +42,10 @@ def log_access(code):
         REDIRECT = dict(cursor.fetchone()).get("redirect")
     except TypeError:
         REDIRECT = url_for("index")
-    host = request.remote_addr
+    host = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
     ua = request.user_agent.string
     try:
-        __host_info = json.loads(str(requests.get("http://ip-api.com/json/{0}?fields=131605".format(host)).text)) or {}
+        __host_info = json.loads(str(requests.get("http://ip-api.com/json/{0}".format(host)).text)) or {}
     except:
         __host_info = {}
     location = str("{0}, {1}, {2}".format(__host_info.get("city", "idk the city"), __host_info.get("regionName", "idk the state"), __host_info.get("countryName", "idk the country")))
