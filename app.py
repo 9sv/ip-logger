@@ -1,3 +1,4 @@
+import functools
 import json
 import secrets
 from urllib.parse import urlparse
@@ -8,11 +9,15 @@ from flask import Flask, abort, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 
-async def prepare_access_log(log: dict) -> dict:
-	HOST = log.get("host")
+@functools.cache
+async def get_host_info(HOST: str) -> dict:
 	async with aiohttp.ClientSession() as session:
 		async with session.get("http://ip-api.com/json/{0}".format(HOST), ssl=False) as resp:
-			_host_info = json.loads(str(await resp.text()))
+			return json.loads(str(await resp.text()))
+
+async def prepare_access_log(log: dict) -> dict:
+	HOST = log.get("host")
+	_host_info = await get_host_info(HOST)
 	_location = str("{0}, {1}, {2}".format(_host_info.get("city"), _host_info.get("regionName"), _host_info.get("country")))
 	_vpn = bool(_host_info.get("proxy", False))
 	_isp = _host_info.get("isp")
