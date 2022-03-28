@@ -29,7 +29,7 @@ def init_database():
 	DATABASE.execute("""CREATE TABLE IF NOT EXISTS `access_logs` (
 			`code` TEXT NOT NULL,
 			`host` TEXT NOT NULL,
-			`ua` TEXT NOT NULL,
+			`ua` TEXT NOT NULL
 		);""")
 	DATABASE.commit()
 
