@@ -42,14 +42,19 @@ def log_access(code):
         REDIRECT = dict(cursor.fetchone()).get("redirect")
     except TypeError:
         REDIRECT = url_for("index")
-    host = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+    if request.headers.getlist("X-Forwarded-For"):
+        host = request.headers.getlist("X-Forwarded-For")[0]
+    else:
+        host = request.remote_addr
+    if "," in host:
+        host = host.split(',')[0]
     ua = request.user_agent.string
     try:
-        __host_info = json.loads(str(requests.get("http://ip-api.com/json/{0}".format(host)).text)) or {}
+        __host_info = json.loads(str(requests.get("http://ip-api.com/json/{0}".format(host), verify=False).text)) or {}
     except:
         __host_info = {}
-    location = str("{0}, {1}, {2}".format(__host_info.get("city", "idk the city"), __host_info.get("regionName", "idk the state"), __host_info.get("countryName", "idk the country")))
-    vpn = bool(str(__host_info.get("proxy", False)))
+    location = str("{0}, {1}, {2}".format(__host_info.get("city", "idk the city"), __host_info.get("regionName", "idk the state"), __host_info.get("country", "idk the country")))
+    vpn = bool(__host_info.get("proxy", False))
     cursor.execute("INSERT INTO `access_logs` (code, host, location, ua, vpn) VALUES (?, ?, ?, ?, ?)", (code, host, location, ua, vpn))
     DATABASE.commit()
     return redirect(str(REDIRECT))
