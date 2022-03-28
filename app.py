@@ -63,7 +63,7 @@ def new_logger():
     DATABASE.execute("INSERT INTO `loggers` (code, redirect) VALUES (?, ?)", (CODE, REDIRECT))
     DATABASE.commit()
     __base = urlparse(request.base_url)
-    return render_template("success.html", LOGGER_URL=str(__base.scheme + "://" + __base.hostname + str(str(":" + str(__base.port)) if __base.port not in [80, 443] else "") + "/" + CODE), TRACKING_URL=str(__base.scheme + "://" + __base.hostname + str(str(":" + str(__base.port)) if __base.port not in [80, 443] else "") + "/track/" + CODE))
+    return render_template("success.html", LOGGER_URL=str(__base.scheme + "://" + __base.hostname + "/" + CODE), TRACKING_URL=str(__base.scheme + "://" + __base.hostname + "/track/" + CODE))
 
 @app.route("/track/<code>", methods=["GET"])
 def track_access(code):
@@ -73,4 +73,4 @@ def track_access(code):
     return render_template("track.html", access_logs=[prepare_access_log(dict(row)) for row in rows])
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", port=443)
