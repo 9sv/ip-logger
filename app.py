@@ -1,16 +1,18 @@
 import json
 import secrets
-import sqlite3
 from urllib.parse import urlparse
 
-import requests
+import aiohttp
+import aiosqlite
 from flask import Flask, abort, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 
-def prepare_access_log(log: dict) -> dict:
+async def prepare_access_log(log: dict) -> dict:
 	HOST = log.get("host")
-	_host_info = json.loads(str(requests.get("http://ip-api.com/json/{0}".format(HOST), verify=False).text))
+	async with aiohttp.ClientSession() as session:
+		async with session.get("http://ip-api.com/json/{0}".format(HOST), ssl=False) as resp:
+			_host_info = json.loads(str(await resp.text()))
 	_location = str("{0}, {1}, {2}".format(_host_info.get("city"), _host_info.get("regionName"), _host_info.get("country")))
 	_vpn = bool(_host_info.get("proxy", False))
 	_isp = _host_info.get("isp")
@@ -18,58 +20,59 @@ def prepare_access_log(log: dict) -> dict:
 	return log
 
 @app.before_first_request
-def init_database():
+async def init_database():
 	global DATABASE
-	DATABASE = sqlite3.connect("database.db", check_same_thread=False)
-	DATABASE.row_factory = sqlite3.Row
-	DATABASE.execute("""CREATE TABLE IF NOT EXISTS `loggers` (
+	DATABASE = await aiosqlite.connect("database.db", check_same_thread=False)
+	DATABASE.row_factory = aiosqlite.Row
+	await DATABASE.execute("""CREATE TABLE IF NOT EXISTS `loggers` (
 			`code` TEXT NOT NULL UNIQUE,
 			`redirect` TEXT NOT NULL
 		);""")
-	DATABASE.execute("""CREATE TABLE IF NOT EXISTS `access_logs` (
+	await DATABASE.execute("""CREATE TABLE IF NOT EXISTS `access_logs` (
 			`code` TEXT NOT NULL,
 			`host` TEXT NOT NULL,
 			`ua` TEXT NOT NULL
 		);""")
-	DATABASE.commit()
+	await DATABASE.commit()
 
 @app.route("/")
-def index():
+async def index():
 	return render_template("index.html")
 
 @app.route("/<code>", methods=["GET"])
-def log_access(code):
-	cursor = DATABASE.cursor()
-	cursor.execute("SELECT redirect FROM `loggers` WHERE code=?", (code,))
-	try:
-		REDIRECT = dict(cursor.fetchone()).get("redirect")
-	except TypeError:
-		REDIRECT = url_for("index")
-	host = request.headers.getlist("X-Forwarded-For")[0] if request.headers.getlist("X-Forwarded-For") else request.remote_addr
-	if "," in host:
-		host = host.split(',')[0]
-	ua = request.user_agent.string
-	cursor.execute("INSERT INTO `access_logs` (code, host, ua) VALUES (?, ?, ?)", (code, host, ua))
-	DATABASE.commit()
+async def log_access(code):
+	async with DATABASE.cursor() as cursor:
+		await cursor.execute("SELECT redirect FROM `loggers` WHERE code=?", (code,))
+		try:
+			REDIRECT = dict(await cursor.fetchone()).get("redirect")
+		except TypeError:
+			REDIRECT = url_for("index")
+		host = request.headers.getlist("X-Forwarded-For")[0] if request.headers.getlist("X-Forwarded-For") else request.remote_addr
+		if "," in host:
+			host = host.split(',')[0]
+		ua = request.user_agent.string
+		await cursor.execute("INSERT INTO `access_logs` (code, host, ua) VALUES (?, ?, ?)", (code, host, ua))
+		await DATABASE.commit()
 	return redirect(str(REDIRECT))
 
 @app.route("/new", methods=["POST"])
-def new_logger():
+async def new_logger():
 	REDIRECT = request.form.get('redirect', False)
 	if not REDIRECT:
 		abort(400)
 	CODE = secrets.token_urlsafe(8)
-	DATABASE.execute("INSERT INTO `loggers` (code, redirect) VALUES (?, ?)", (CODE, REDIRECT))
-	DATABASE.commit()
+	async with DATABASE.cursor() as cursor:
+		await cursor.execute("INSERT INTO `loggers` (code, redirect) VALUES (?, ?)", (CODE, REDIRECT))
+	await DATABASE.commit()
 	__base = urlparse(request.base_url)
 	return render_template("success.html", LOGGER_URL=str(__base.scheme + "://" + __base.hostname + "/" + CODE), TRACKING_URL=str(__base.scheme + "://" + __base.hostname + "/track/" + CODE))
 
 @app.route("/track/<code>", methods=["GET"])
-def track_access(code):
-	cursor = DATABASE.cursor()
-	cursor.execute("SELECT * FROM `access_logs` WHERE code=?", (code,))
-	rows = cursor.fetchall()
-	return render_template("track.html", access_logs=[prepare_access_log(dict(row)) for row in rows])
+async def track_access(code):
+	async with DATABASE.cursor() as cursor:
+		await cursor.execute("SELECT * FROM `access_logs` WHERE code=?", (code,))
+		rows = await cursor.fetchall()
+	return render_template("track.html", access_logs=[await prepare_access_log(dict(row)) for row in rows])
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=443)
