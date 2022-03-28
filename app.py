@@ -36,6 +36,9 @@ def index():
 
 @app.route("/<code>", methods=["GET"])
 def log_access(code):
+    cursor = DATABASE.cursor()
+    cursor.execute("SELECT redirect FROM `loggers` WHERE code=?", (code,))
+    REDIRECT = dict(cursor.fetchone()).get("redirect") or url_for("index")
     host = request.remote_addr
     ua = request.user_agent.string
     try:
@@ -44,10 +47,9 @@ def log_access(code):
         __host_info = {}
     location = str("{0}, {1}, {2}".format(__host_info.get("city", "idk the city"), __host_info.get("regionName", "idk the state"), __host_info.get("countryName", "idk the country")))
     vpn = bool(str(__host_info.get("proxy", False)))
-    cursor = DATABASE.cursor()
     cursor.execute("INSERT INTO `access_logs` (code, host, location, ua, vpn) VALUES (?, ?, ?, ?, ?)", (code, host, location, ua, vpn))
     DATABASE.commit()
-    return redirect("https://google.com")
+    return redirect(str(REDIRECT))
 
 @app.route("/new", methods=["POST"])
 def new_logger():
@@ -68,4 +70,4 @@ def track_access(code):
     return render_template("track.html", access_logs=[prepare_access_log(dict(row)) for row in rows])
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=443)
+    app.run(host="0.0.0.0")
