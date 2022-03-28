@@ -8,20 +8,26 @@
     </head>
     <body>
         <div class="container">
-            <div class="row justify-content-md-center">
-                <div class="col"><b>IP Address</b></div>
-                <div class="col"><b>Location</b></div>
-                <div class="col"><b>User-Agent</b></div>
-                <div class="col"><b>VPN</b></div>
-            </div>
-            {% for log in access_logs %}
-            <div class="row justify-content-md-center">
-                <div class="col">{{log['host']}}</div>
-                <div class="col">{{log['location']}}</div>
-                <div class="col">{{log['ua']}}</div>
-                <div class="col">{{log['vpn']}}</div>
-            </div>
-            {% endfor %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><b>Host</b></th>
+                        <th><b>Location</b></th>
+                        <th><b>User-Agent</b></th>
+                        <th><b>VPN</b></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in access_logs %}
+                    <tr>
+                        <td>{{log['host']}}</td>
+                        <td>{{log['location']}}</td>
+                        <td>{{log['ua']}}</td>
+                        <td>{{log['vpn']}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </body>
 </html>

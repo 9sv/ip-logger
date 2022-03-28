@@ -38,7 +38,10 @@ def index():
 def log_access(code):
     cursor = DATABASE.cursor()
     cursor.execute("SELECT redirect FROM `loggers` WHERE code=?", (code,))
-    REDIRECT = dict(cursor.fetchone()).get("redirect") or url_for("index")
+    try:
+        REDIRECT = dict(cursor.fetchone()).get("redirect")
+    except TypeError:
+        REDIRECT = url_for("index")
     host = request.remote_addr
     ua = request.user_agent.string
     try:
