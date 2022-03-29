@@ -9,7 +9,7 @@ from flask import Flask, abort, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 
-@functools.cache
+@functools.lru_cache
 async def get_host_info(HOST: str) -> dict:
 	async with aiohttp.ClientSession() as session:
 		async with session.get("http://ip-api.com/json/{0}".format(HOST), ssl=False) as resp:
