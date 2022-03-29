@@ -3,3 +3,4 @@ gunicorn
 requests
 aiohttp
 aiosqlite
+async_lru
