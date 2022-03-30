@@ -11,30 +11,35 @@
             <div class="alert alert-success m-4">
                 <h3 class="alert-heading">Access Logs</h3>
                 <br>
-                <div class="container m-3 table-responsive-sm">
-                    <table class="table table-bordered table-dark">
-                        <thead>
-                            <tr>
-                                <th><b>Host</b></th>
-                                <th><b>Location</b></th>
-                                <th><b>User-Agent</b></th>
-                                <th><b>ISP</b></th>
-                                <th><b>VPN</b></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in access_logs %}
-                            <tr>
-                                <td>{{log['host']}}</td>
-                                <td>{{log['location']}}</td>
-                                <td>{{log['ua']}}</td>
-                                <td>{{log['isp']}}</td>
-                                <td>{{log['vpn']}}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                {% if access_logs|length > 0 %}
+                    <div class="container m-3 table-responsive-sm">
+                        <table class="table table-bordered table-dark">
+                            <thead>
+                                <tr>
+                                    <th><b>Host</b></th>
+                                    <th><b>Location</b></th>
+                                    <th><b>User-Agent</b></th>
+                                    <th><b>ISP</b></th>
+                                    <th><b>VPN</b></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in access_logs %}
+                                <tr>
+                                    <td>{{log['host']}}</td>
+                                    <td>{{log['location']}}</td>
+                                    <td>{{log['ua']}}</td>
+                                    <td>{{log['isp']}}</td>
+                                    <td>{{log['vpn']}}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>There are no access logs yet.</p>
+                    <p>Reload the page to fetch new results.</p>
+                {% endif %}
             </div>
         </center>
     </body>

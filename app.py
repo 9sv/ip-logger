@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 import aiohttp
 import aiosqlite
 from async_lru import alru_cache
-from flask import Flask, abort, redirect, render_template, request, url_for
+from flask import (Flask, abort, redirect, render_template, request, url_for)
 
 app = Flask(__name__)
 
@@ -14,7 +14,9 @@ app = Flask(__name__)
 async def get_host_info(HOST: str) -> dict:
 	async with aiohttp.ClientSession() as session:
 		async with session.get("http://ip-api.com/json/{0}".format(HOST), ssl=False) as resp:
-			return json.loads(str(await resp.text()))
+			_info = json.loads(str(await resp.text()))
+		await session.close()
+		return _info
 
 async def prepare_access_log(log: dict) -> dict:
 	HOST = log.get("host")
