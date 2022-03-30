@@ -80,7 +80,7 @@ async def track_access(code):
 	async with DATABASE.cursor() as cursor:
 		await cursor.execute("SELECT * FROM `access_logs` WHERE code=?", (code,))
 		rows = await cursor.fetchall()
-	if not rows:
+	if not (len(rows) > 0):
 		return redirect(url_for("index"))
 	return render_template("track.html", access_logs=[await prepare_access_log(dict(row)) for row in rows])
 
