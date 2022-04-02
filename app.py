@@ -19,7 +19,9 @@ async def get_host_info(HOST: str) -> dict:
 		return _info
 
 async def prepare_access_log(log: dict) -> dict:
-	HOST = log.get("host")
+	HOST = log.get("host", False)
+	if not HOST:
+		return
 	_host_info = await get_host_info(HOST)
 	_location = str("{0}, {1}, {2}".format(_host_info.get("city"), _host_info.get("regionName"), _host_info.get("country")))
 	_vpn = bool(_host_info.get("proxy", False))
@@ -78,11 +80,11 @@ async def new_logger():
 @app.route("/track/<code>", methods=["GET"])
 async def track_access(code):
 	async with DATABASE.cursor() as cursor:
-		await cursor.execute("SELECT * FROM `access_logs` WHERE code=?", (code,))
+		await cursor.execute("SELECT * FROM `loggers` WHERE code=?", (code,))
 		rows = await cursor.fetchall()
 	if not (len(rows) > 0):
 		return redirect(url_for("index"))
-	return render_template("track.html", access_logs=[await prepare_access_log(dict(row)) for row in rows])
+	return render_template("track.html", access_logs=[log for log in [await prepare_access_log(dict(row)) for row in rows] if log != None])
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=443)
